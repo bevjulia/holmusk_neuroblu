@@ -1,0 +1,46 @@
+=====================================================================================================
+Original
+=====================================================================================================
+"HashAggregate  (cost=84.12..86.39 rows=227 width=5007) (actual time=5.521..5.575 rows=24 loops=1)"
+"  Group Key: p.id, p.birthdate, p.deathdate, p.ssn, p.drivers, p.passport, p.prefix, p.first, p.last, p.suffix, p.maiden, p.marital, p.race, p.ethnicity, p.gender, p.birthplace, p.address, p.city, p.state, p.county, p.zip, p.lat, p.lon, p.healthcare_expenses, p.healthcare_coverage, p.fips, p.income, c.start, c.stop, c.patient, c.encounter, c.code, c.description, e.id, e.start, e.stop, e.patient, e.organization, e.provider, e.payer, e.encounterclass, e.code, e.description, e.base_encounter_cost, e.total_claim_cost, e.payer_coverage, e.reasoncode, e.reasondescription"
+"  Batches: 1  Memory Usage: 129kB"
+"  ->  Hash Join  (cost=37.44..56.88 rows=227 width=5007) (actual time=0.804..1.746 rows=384 loops=1)"
+"        Hash Cond: (((c.patient)::text = (p.id)::text) AND ((c.encounter)::text = (e.id)::text))"
+"        ->  Seq Scan on conditions c  (cost=0.00..13.00 rows=400 width=118) (actual time=0.019..0.162 rows=400 loops=1)"
+"              Filter: (start >= '1975-01-01'::date)"
+"        ->  Hash  (cost=35.58..35.58 rows=124 width=4889) (actual time=0.764..0.766 rows=124 loops=1)"
+"              Buckets: 1024  Batches: 1  Memory Usage: 83kB"
+"              ->  Hash Join  (cost=10.22..35.58 rows=124 width=4889) (actual time=0.036..0.457 rows=124 loops=1)"
+"                    Hash Cond: ((e.patient)::text = (p.id)::text)"
+"                    ->  Seq Scan on encounters e  (cost=0.00..23.65 rows=124 width=297) (actual time=0.014..0.247 rows=124 loops=1)"
+"                          Filter: ((encounterclass)::text = 'ambulatory'::text)"
+"                          Rows Removed by Filter: 328"
+"                    ->  Hash  (cost=10.10..10.10 rows=10 width=4592) (actual time=0.011..0.011 rows=2 loops=1)"
+"                          Buckets: 1024  Batches: 1  Memory Usage: 9kB"
+"                          ->  Seq Scan on patients p  (cost=0.00..10.10 rows=10 width=4592) (actual time=0.004..0.005 rows=2 loops=1)"
+"Planning Time: 2.179 ms"
+"Execution Time: 5.742 ms"
+
+=====================================================================================================
+Optimized
+=====================================================================================================
+"Hash Join  (cost=40.72..56.77 rows=5 width=5007) (actual time=0.910..1.369 rows=96 loops=1)"
+"  Hash Cond: (((c.patient)::text = (p.id)::text) AND ((c.encounter)::text = (encounters.id)::text))"
+"  ->  Seq Scan on conditions c  (cost=0.00..13.00 rows=400 width=118) (actual time=0.019..0.141 rows=400 loops=1)"
+"        Filter: (start >= '1975-01-01'::date)"
+"  ->  Hash  (cost=40.57..40.57 rows=10 width=4889) (actual time=0.869..0.872 rows=31 loops=1)"
+"        Buckets: 1024  Batches: 1  Memory Usage: 27kB"
+"        ->  Hash Join  (cost=38.52..40.57 rows=10 width=4889) (actual time=0.714..0.787 rows=31 loops=1)"
+"              Hash Cond: ((encounters.patient)::text = (p.id)::text)"
+"              ->  HashAggregate  (cost=28.30..29.12 rows=82 width=297) (actual time=0.692..0.722 rows=31 loops=1)"
+"                    Group Key: encounters.id, encounters.start, encounters.stop, encounters.patient, encounters.organization, encounters.provider, encounters.payer, encounters.encounterclass, encounters.code, encounters.description, encounters.base_encounter_cost, encounters.total_claim_cost, encounters.payer_coverage, encounters.reasoncode, encounters.reasondescription"
+"                    Batches: 1  Memory Usage: 72kB"
+"                    ->  Seq Scan on encounters  (cost=0.00..23.65 rows=124 width=297) (actual time=0.013..0.254 rows=124 loops=1)"
+"                          Filter: ((encounterclass)::text = 'ambulatory'::text)"
+"                          Rows Removed by Filter: 328"
+"              ->  Hash  (cost=10.10..10.10 rows=10 width=4592) (actual time=0.011..0.012 rows=2 loops=1)"
+"                    Buckets: 1024  Batches: 1  Memory Usage: 9kB"
+"                    ->  Seq Scan on patients p  (cost=0.00..10.10 rows=10 width=4592) (actual time=0.005..0.006 rows=2 loops=1)"
+"Planning Time: 0.498 ms"
+"Execution Time: 1.501 ms"
+
